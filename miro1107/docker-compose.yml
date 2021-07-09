@@ -4,7 +4,6 @@ services:
   embis-mysql:
     image: miro1107/embis-cluster-mysql:v2
     container_name: embis-mysql
-    hostname: dbc.embis
     ports:
       - 3306:3306
     volumes:
@@ -12,6 +11,10 @@ services:
     entrypoint:
       - ./srv.sh
       - mysql_restart
+    networks:
+      embis-net:
+        aliases:
+          - dbc.embis
     
   embis-pma:
     image: phpmyadmin
@@ -22,13 +25,12 @@ services:
       - embis-mysql
     environment:
       PMA_HOST: dbc.embis
+    networks:
+      - embis-net
 
   embis-tomcat:
     image: miro1107/embis-cluster-tomcat:v2.1
     container_name: embis-tomcat
-    hostname: bnc.embis
-    external_links:
-      - embis-tomcat:fsc.embis
     ports:
       - 8009:8009
       - 8080:8080
@@ -41,13 +43,15 @@ services:
     entrypoint:
       - ./srv.sh
       - tomcat_restart
+    networks:
+      embis-net:
+        aliases:
+          - bnc.embis
+          - fsc.embis
   
   embis-apache:
     image: miro1107/embis-cluster-apache:v2
     container_name: embis-apache
-    hostname: fnc.embis
-    external_links:
-      - embis-tomcat:fsc.embis
     ports:
       - 80:80
       - 443:443
@@ -60,3 +64,14 @@ services:
     entrypoint:
       - ./srv.sh
       - apache_restart
+    networks:
+      embis-net:
+        aliases:
+          - fnc.embis
+
+networks:
+  embis-net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "192.168.0.0/24"
