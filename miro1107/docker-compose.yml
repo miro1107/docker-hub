@@ -1,0 +1,62 @@
+---
+version: '2'
+services:
+  embis-mysql:
+    image: miro1107/embis-cluster-mysql:v2
+    container_name: embis-mysql
+    hostname: dbc.embis
+    ports:
+      - 3306:3306
+    volumes:
+      - ~/opt/eMbis.cluster/sites/db:/opt/eMbis.cluster/sites/db
+    entrypoint:
+      - ./srv.sh
+      - mysql_restart
+    
+  embis-pma:
+    image: phpmyadmin
+    container_name: embis-pma
+    ports:
+      - 11199:80
+    depends_on:
+      - embis-mysql
+    environment:
+      PMA_HOST: dbc.embis
+
+  embis-tomcat:
+    image: miro1107/embis-cluster-tomcat:v2.1
+    container_name: embis-tomcat
+    hostname: bnc.embis
+    external_links:
+      - embis-tomcat:fsc.embis
+    ports:
+      - 8009:8009
+      - 8080:8080
+      - 8443:8443
+    depends_on:
+      - embis-mysql
+    volumes:
+      - ~/opt/eMbis.cluster/sites/apis:/opt/eMbis.cluster/sites/apis
+      - ~/opt/eMbis.cluster/sites/files:/opt/eMbis.cluster/sites/files
+    entrypoint:
+      - ./srv.sh
+      - tomcat_restart
+  
+  embis-apache:
+    image: miro1107/embis-cluster-apache:v2
+    container_name: embis-apache
+    hostname: fnc.embis
+    external_links:
+      - embis-tomcat:fsc.embis
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - embis-tomcat
+    volumes:
+      - ~/opt/eMbis.cluster/sites/web:/opt/eMbis.cluster/sites/web
+      - ~/opt/eMbis.cluster/sites/admin:/opt/eMbis.cluster/sites/admin
+      - ~/opt/eMbis.cluster/sites/pb:/opt/eMbis.cluster/sites/pb
+    entrypoint:
+      - ./srv.sh
+      - apache_restart
